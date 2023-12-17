@@ -1,0 +1,53 @@
+version: "3.9"
+
+networks:
+  backend:
+    driver: bridge
+
+services:
+  
+  db:
+    image: mysql:8.2
+    ports:
+      - "3308:3306"
+    command: --default-authentication-plugin=mysql_native_password
+    container_name: test-events-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: 'test_events'
+      MYSQL_ROOT_PASSWORD: '123456789'
+      MYSQL_PASSWORD: '123456789'
+      MYSQL_USER: 'andrew'
+    volumes:
+      - ./docker/mysql/datadir:/var/lib/mysql
+    networks:
+      - backend
+
+  app:
+    build:
+      args:
+        user: andrew
+        uid: 1000
+      context: .
+      dockerfile: ./docker/php-fpm/Dockerfile
+    image: test-events-app
+    container_name: test-events-app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./src:/var/www
+    networks:
+      - backend
+
+  nginx:
+    image: nginx:1.23.0
+    container_name: test-events-nginx
+    restart: unless-stopped
+    ports:
+      - "88:80"
+    volumes:
+      - ./src:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - backend
+
